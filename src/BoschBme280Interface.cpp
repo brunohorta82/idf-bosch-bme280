@@ -11,7 +11,7 @@ using namespace std;
 namespace Environment
 {
     struct bme280_dev bme280Device;
-
+    uint32_t bme280MinDelay;
     BME280Sensor *_bme280Sensor;
     void boschDelayUs(uint32_t period, void *intf_ptr)
     {
@@ -76,9 +76,9 @@ namespace Environment
         /* Recommended mode of operation: Indoor navigation */
         bme280Device.settings.osr_h = BME280_OVERSAMPLING_1X;
         bme280Device.settings.osr_p = BME280_OVERSAMPLING_16X;
-        bme280Device.settings.osr_t = BME280_OVERSAMPLING_2X;
-        bme280Device.settings.filter = BME280_FILTER_COEFF_16;
-        bme280Device.settings.standby_time = BME280_STANDBY_TIME_62_5_MS;
+        bme280Device.settings.osr_t = BME280_OVERSAMPLING_1X;
+        bme280Device.settings.filter = BME280_FILTER_COEFF_OFF;
+        bme280Device.settings.standby_time = BME280_STANDBY_TIME_1000_MS;
 
         settings_sel = BME280_OSR_PRESS_SEL;
         settings_sel |= BME280_OSR_TEMP_SEL;
@@ -86,7 +86,8 @@ namespace Environment
         settings_sel |= BME280_STANDBY_SEL;
         settings_sel |= BME280_FILTER_SEL;
         rslt = bme280_set_sensor_settings(settings_sel, &bme280Device);
-        rslt = bme280_set_sensor_mode(BME280_NORMAL_MODE, &bme280Device);
+        rslt = bme280_set_sensor_mode(BME280_FORCED_MODE, &bme280Device);
+        bme280MinDelay = bme280_cal_meas_delay(&bme280Device.settings);
         if (rslt == BME280_OK)
         {
             ESP_LOGI("TAG", "BME280 Init with success.");
@@ -102,11 +103,10 @@ namespace Environment
     esp_err_t bme280Read()
     {
         int8_t rslt = BME280_OK;
-        struct bme280_data comp_data;
+        struct bme280_data comp_data = {};
         bme280Device.delay_us(70, bme280Device.intf_ptr);
-        rslt = bme280_get_sensor_data(BME280_ALL, &comp_data, &bme280Device);
-        ESP_LOGD("BME280", "Temperature(deg C)  Pressure(Pa) Humidity(%%)");
-        ESP_LOGD("BME280", "%0.2f               %0.2f        %0.2f", comp_data.temperature, comp_data.pressure, comp_data.humidity);
+        bme280Device.delay_us(bme280MinDelay, bme280Device.intf_ptr);
+        ESP_LOGI("BME280", "Temp(ºC): %0.2f   Pressure(Pa): %0.2f   Humidity(%%) %0.2f", comp_data.temperature, comp_data.pressure, comp_data.humidity);
         _bme280Sensor->setClimate(comp_data.temperature, comp_data.humidity, comp_data.pressure);
         return rslt == BME280_OK ? ESP_OK : ESP_ERR_INVALID_STATE;
     }
