@@ -107,6 +107,8 @@ namespace Environment
         rslt = bme280_get_sensor_data(BME280_ALL, &comp_data, &bme280Device);
         ESP_LOGD("BME280", "Temperature(deg C)  Pressure(Pa) Humidity(%%)");
         ESP_LOGD("BME280", "%0.2f               %0.2f        %0.2f", comp_data.temperature, comp_data.pressure, comp_data.humidity);
+        _bme280Sensor->setClimate(comp_data.temperature, comp_data.humidity, comp_data.pressure);
         return rslt == BME280_OK ? ESP_OK : ESP_ERR_INVALID_STATE;
     }
+
 }
