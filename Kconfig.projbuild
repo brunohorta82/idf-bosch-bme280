@@ -1,0 +1,6 @@
+menu "Bosch BME280 Sensor" 
+    config BME280_ADDRESS
+        hex
+        prompt  "Temperature Humidity and Pressure BME280 Sensor Address"
+        default 0x76
+endmenu
